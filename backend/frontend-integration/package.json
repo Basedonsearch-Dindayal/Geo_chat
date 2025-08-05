@@ -1,0 +1,13 @@
+{
+  "name": "frontend-integration-files",
+  "description": "Integration files for connecting React frontend to Geo Chat backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "socket.io-client": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "react": "^18.0.0"
+  },
+  "note": "These files should be copied to your React frontend project"
+}

@@ -1,7 +1,7 @@
+import { Circle, MapPin } from 'lucide-react';
 import React from 'react';
 import { User } from '../types';
 import { formatDistance } from '../utils/geolocation';
-import { Circle, MapPin } from 'lucide-react';
 
 interface UserListProps {
   users: User[];
@@ -61,6 +61,11 @@ export const UserList: React.FC<UserListProps> = ({
                 {activeDirectChatUserId === user.id && (
                   <span className="ml-2 text-xs text-blue-600 font-medium">
                     • Chatting
+                  </span>
+                )}
+                {!user.isOnline && (
+                  <span className="ml-2 text-xs text-gray-400">
+                    • Last seen {new Date(user.lastSeen).toLocaleTimeString()}
                   </span>
                 )}
               </div>

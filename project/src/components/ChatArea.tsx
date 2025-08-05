@@ -1,20 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { MapPin, Send } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Message, User } from '../types';
-import { Send, MapPin } from 'lucide-react';
-import { formatDistance } from '../utils/geolocation';
 
 interface ChatAreaProps {
   messages: Message[];
   currentUser: User | null;
   onSendMessage: (content: string) => void;
   directChatUser?: User | null;
+  hasNewMessages?: boolean;
+  onClearNewMessages?: () => void;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   currentUser,
   onSendMessage,
-  directChatUser
+  directChatUser,
+  hasNewMessages = false,
+  onClearNewMessages
 }) => {
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,6 +30,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     scrollToBottom();
   }, [messages]);
 
+  // Clear new messages indicator when component receives focus or user starts typing
+  useEffect(() => {
+    if (hasNewMessages && onClearNewMessages) {
+      const timer = setTimeout(() => {
+        onClearNewMessages();
+      }, 3000); // Auto-clear after 3 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasNewMessages, onClearNewMessages]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim() && currentUser) {
@@ -35,19 +49,25 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
-    }).format(date);
+    }).format(dateObj);
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border flex flex-col h-96">
-      <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-800">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700 flex flex-col h-96 md:h-[500px]">
+      <div className="p-4 border-b relative">
+        <h3 className="text-lg font-semibold text-gray-800 flex items-center">
           {directChatUser ? `Chat with ${directChatUser.username}` : 'Local Chat'}
+          {hasNewMessages && (
+            <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 animate-pulse">
+              New messages
+            </span>
+          )}
         </h3>
         <p className="text-sm text-gray-500">
           {directChatUser 
@@ -69,15 +89,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </p>
           </div>
         ) : (
-          messages.map((message) => {
+          [...messages].reverse().map((message) => {
             const isOwnMessage = message.userId === currentUser?.id;
-            const distance = currentUser && !directChatUser ? formatDistance(
-              Math.sqrt(
-                Math.pow(message.latitude - currentUser.latitude, 2) +
-                Math.pow(message.longitude - currentUser.longitude, 2)
-              ) * 111
-            ) : '';
-
+            
             return (
               <div
                 key={message.id}
@@ -96,11 +110,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     </div>
                   )}
                   <div className="text-sm">{message.content}</div>
-                  <div className={`text-xs mt-1 opacity-75 flex items-center justify-between`}>
+                  <div className={`text-xs mt-1 opacity-75`}>
                     <span>{formatTime(message.timestamp)}</span>
-                    {!isOwnMessage && distance && !directChatUser && (
-                      <span className="ml-2">{distance}</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -115,7 +126,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           <input
             type="text"
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              // Clear new messages indicator when user starts typing
+              if (hasNewMessages && onClearNewMessages) {
+                onClearNewMessages();
+              }
+            }}
             placeholder={
               directChatUser 
                 ? `Message ${directChatUser.username}...` 

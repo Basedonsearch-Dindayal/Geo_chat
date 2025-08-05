@@ -35,7 +35,17 @@ export interface DirectChat {
   lastActivity: Date;
 }
 
-// Socket.IO event types for frontend
+// Server-specific types
+export interface ClientToServerEvents {
+  join_location: (data: { username: string; latitude: number; longitude: number }) => void;
+  update_location: (data: { latitude: number; longitude: number }) => void;
+  send_message: (data: { content: string; latitude: number; longitude: number; recipientId?: string }) => void;
+  start_direct_chat: (data: { userId: string }) => void;
+  set_distance_range: (range: DistanceRange) => void;
+  get_users_in_range: (range: DistanceRange) => void;
+  disconnect: () => void;
+}
+
 export interface ServerToClientEvents {
   user_initialized: (user: User) => void;
   user_joined: (user: User) => void;
@@ -45,19 +55,17 @@ export interface ServerToClientEvents {
   users_in_range: (users: User[]) => void;
   messages_in_range: (messages: Message[]) => void;
   direct_chat_started: (chatId: string, otherUser: User) => void;
-  user_typing: (data: { userId: string; username: string; recipientId?: string }) => void;
-  user_stopped_typing: (data: { userId: string; recipientId?: string }) => void;
   error: (error: { message: string; code?: string }) => void;
 }
 
-export interface ClientToServerEvents {
-  join_location: (data: { username: string; latitude: number; longitude: number }) => void;
-  update_location: (data: { latitude: number; longitude: number }) => void;
-  send_message: (data: { content: string; latitude: number; longitude: number; recipientId?: string }) => void;
-  start_direct_chat: (data: { userId: string }) => void;
-  set_distance_range: (range: DistanceRange) => void;
-  get_users_in_range: (range: DistanceRange) => void;
-  start_typing: (data: { recipientId?: string }) => void;
-  stop_typing: (data: { recipientId?: string }) => void;
-  disconnect: () => void;
+export interface InterServerEvents {
+  ping: () => void;
+}
+
+export interface SocketData {
+  userId: string;
+  username: string;
+  latitude: number;
+  longitude: number;
+  distanceRange: DistanceRange;
 }

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo Chat Test</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Geo Chat Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+    <br>
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        const socket = io('http://localhost:3001');
+        const messagesDiv = document.getElementById('messages');
+        const statusDiv = document.getElementById('status');
+
+        // Test user data
+        const testUser = {
+            username: 'TestUser_' + Math.floor(Math.random() * 1000),
+            latitude: 40.7128 + (Math.random() - 0.5) * 0.01,
+            longitude: -74.0060 + (Math.random() - 0.5) * 0.01
+        };
+
+        socket.on('connect', () => {
+            statusDiv.innerHTML = 'Connected! Joining as ' + testUser.username;
+            socket.emit('join_location', testUser);
+        });
+
+        socket.on('users_in_range', (users) => {
+            console.log('Users in range:', users);
+            statusDiv.innerHTML = `Connected as ${testUser.username}. Users nearby: ${users.length}`;
+        });
+
+        socket.on('messages_in_range', (messages) => {
+            console.log('Messages in range:', messages);
+            messagesDiv.innerHTML = '<h3>Messages:</h3>';
+            messages.forEach(msg => {
+                messagesDiv.innerHTML += `<div><strong>${msg.username}:</strong> ${msg.content} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small></div>`;
+            });
+        });
+
+        socket.on('new_message', (message) => {
+            console.log('New message:', message);
+            messagesDiv.innerHTML += `<div><strong>${message.username}:</strong> ${message.content} <small>(${new Date(message.timestamp).toLocaleTimeString()})</small></div>`;
+        });
+
+        socket.on('error', (error) => {
+            console.error('Socket error:', error);
+            statusDiv.innerHTML = 'Error: ' + error.message;
+        });
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            if (input.value.trim()) {
+                socket.emit('send_message', {
+                    content: input.value.trim(),
+                    latitude: testUser.latitude,
+                    longitude: testUser.longitude
+                });
+                input.value = '';
+            }
+        }
+
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
