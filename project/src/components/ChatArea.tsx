@@ -1,6 +1,8 @@
 import { MapPin, Send } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Message, User } from '../types';
+import { MessageStatusIndicator } from './MessageStatusIndicator';
+import { TypingIndicator } from './TypingIndicator';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -9,6 +11,11 @@ interface ChatAreaProps {
   directChatUser?: User | null;
   hasNewMessages?: boolean;
   onClearNewMessages?: () => void;
+  typingUsers?: string[];
+  users?: User[];
+  activeDirectChatUserId?: string;
+  onStartTyping?: () => void;
+  onStopTyping?: () => void;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -17,10 +24,48 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
   directChatUser,
   hasNewMessages = false,
-  onClearNewMessages
+  onClearNewMessages,
+  typingUsers = [],
+  users = [],
+  activeDirectChatUserId,
+  onStartTyping,
+  onStopTyping
 }) => {
   const [newMessage, setNewMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<number>();
+
+  // Handle typing indicators
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Start typing indicator
+    if (value.trim() && !isTyping && onStartTyping) {
+      setIsTyping(true);
+      onStartTyping();
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing indicator after 2 seconds of inactivity
+    typingTimeoutRef.current = window.setTimeout(() => {
+      if (isTyping && onStopTyping) {
+        setIsTyping(false);
+        onStopTyping();
+      }
+    }, 2000);
+
+    // Stop typing immediately if input is empty
+    if (!value.trim() && isTyping && onStopTyping) {
+      setIsTyping(false);
+      onStopTyping();
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,6 +91,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     if (newMessage.trim() && currentUser) {
       onSendMessage(newMessage.trim());
       setNewMessage('');
+      
+      // Stop typing indicator when message is sent
+      if (isTyping && onStopTyping) {
+        setIsTyping(false);
+        onStopTyping();
+      }
     }
   };
 
@@ -110,8 +161,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     </div>
                   )}
                   <div className="text-sm">{message.content}</div>
-                  <div className={`text-xs mt-1 opacity-75`}>
+                  <div className={`text-xs mt-1 opacity-75 flex items-center justify-between`}>
                     <span>{formatTime(message.timestamp)}</span>
+                    <MessageStatusIndicator 
+                      status={message.status || { sent: true, delivered: false, read: false }}
+                      isOwnMessage={isOwnMessage}
+                    />
                   </div>
                 </div>
               </div>
@@ -121,13 +176,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing Indicator */}
+      <TypingIndicator 
+        typingUsers={typingUsers} 
+        users={users} 
+        activeDirectChatUserId={activeDirectChatUserId}
+      />
+
       <form onSubmit={handleSubmit} className="p-4 border-t">
         <div className="flex space-x-2">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => {
-              setNewMessage(e.target.value);
+              handleInputChange(e);
               // Clear new messages indicator when user starts typing
               if (hasNewMessages && onClearNewMessages) {
                 onClearNewMessages();

@@ -7,6 +7,12 @@ export interface User {
   isOnline: boolean;
 }
 
+export interface MessageStatus {
+  sent: boolean;
+  delivered: boolean;
+  read: boolean;
+}
+
 export interface Message {
   id: string;
   userId: string;
@@ -17,6 +23,7 @@ export interface Message {
   longitude: number;
   recipientId?: string; // For direct messages
   isDirectMessage?: boolean;
+  status?: MessageStatus; // Message delivery status
 }
 
 export interface ChatRoom {

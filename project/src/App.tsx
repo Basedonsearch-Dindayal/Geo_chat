@@ -3,6 +3,7 @@ import { MapPin, Moon, Sun, Users } from 'lucide-react';
 import { useState } from 'react';
 import { ChatArea } from './components/ChatArea';
 import { LocationPermission } from './components/LocationPermission';
+import { NotificationSettingsPanel } from './components/NotificationSettingsPanel';
 import { RangeSelector } from './components/RangeSelector';
 import { UserList } from './components/UserList';
 import { UsernameModal } from './components/UsernameModal';
@@ -15,6 +16,12 @@ function AppContent() {
   const [usernameSet, setUsernameSet] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [userPosition, setUserPosition] = useState<GeolocationPosition | null>(null);
+  const [notificationSettings, setNotificationSettings] = useState({
+    enableSounds: true,
+    enableBrowserNotifications: true,
+    directMessagesOnly: false,
+    quietHours: { enabled: false, start: '22:00', end: '08:00' }
+  });
 
   const {
     currentUser,
@@ -28,7 +35,12 @@ function AppContent() {
     initializeUser,
     sendMessage,
     hasNewMessages,
-    clearNewMessagesIndicator
+    clearNewMessagesIndicator,
+    unreadCounts,
+    clearUnreadCount,
+    typingUsers,
+    startTyping,
+    stopTyping
   } = useLocationChat();
 
   const handleLocationGranted = (position: GeolocationPosition) => {
@@ -52,6 +64,9 @@ function AppContent() {
     sendMessage(content);
     clearNewMessagesIndicator(); // Clear indicator when user sends a message
   };
+
+  // Calculate total unread messages
+  const totalUnreadMessages = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
 
   if (!locationGranted) {
     return (
@@ -98,6 +113,11 @@ function AppContent() {
                 <div className="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-1">
                   <Users className="w-4 h-4 mr-1" />
                   <span>Welcome, {currentUser?.username}</span>
+                  {totalUnreadMessages > 0 && (
+                    <div className="ml-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full font-bold">
+                      {totalUnreadMessages}
+                    </div>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   📍 Location enabled
@@ -120,6 +140,8 @@ function AppContent() {
               currentUser={currentUser}
               onStartDirectChat={startDirectChat}
               activeDirectChatUserId={activeDirectChatUserId}
+              unreadCounts={unreadCounts}
+              onClearUnreadCount={clearUnreadCount}
             />
           </div>
 
@@ -132,6 +154,11 @@ function AppContent() {
               directChatUser={directChatUser}
               hasNewMessages={hasNewMessages}
               onClearNewMessages={clearNewMessagesIndicator}
+              typingUsers={typingUsers}
+              users={usersInRange}
+              activeDirectChatUserId={activeDirectChatUserId}
+              onStartTyping={startTyping}
+              onStopTyping={stopTyping}
             />
           </div>
         </div>
@@ -141,6 +168,12 @@ function AppContent() {
           <p>Your location is used only to connect you with nearby users. Exact coordinates are never shared.</p>
         </div>
       </div>
+      
+      {/* Notification Settings Panel */}
+      <NotificationSettingsPanel 
+        settings={notificationSettings}
+        onSettingsChange={setNotificationSettings}
+      />
     </div>
   );
 }

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo Chat - Notification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin: 5px 0;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            margin-right: 10px;
+        }
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .status {
+            color: #6b7280;
+            font-size: 12px;
+        }
+        .total-badge {
+            background: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Geo Chat - Individual Message Notification Test</h1>
+    
+    <div class="test-panel">
+        <h2>🔔 Notification Features Test</h2>
+        <p>This page demonstrates the individual message count notification system:</p>
+        
+        <h3>Header with Total Badge:</h3>
+        <div style="background: #1f2937; color: white; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="margin: 0;">LocalChat</h2>
+                <p style="margin: 0; color: #9ca3af;">Connect with people nearby</p>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <span>Welcome, TestUser</span>
+                <span class="total-badge" id="totalBadge" style="display: none;">0</span>
+            </div>
+        </div>
+        
+        <h3>User List with Individual Badges:</h3>
+        <div id="userList">
+            <div class="user-item">
+                <div class="avatar">
+                    A
+                    <div class="badge" id="aliceBadge" style="display: none;">0</div>
+                </div>
+                <div>
+                    <strong>Alice</strong>
+                    <div class="status" id="aliceStatus">Online</div>
+                </div>
+            </div>
+            
+            <div class="user-item">
+                <div class="avatar">
+                    B
+                    <div class="badge" id="bobBadge" style="display: none;">0</div>
+                </div>
+                <div>
+                    <strong>Bob</strong>
+                    <div class="status" id="bobStatus">Online</div>
+                </div>
+            </div>
+            
+            <div class="user-item">
+                <div class="avatar">
+                    C
+                    <div class="badge" id="charlieBadge" style="display: none;">0</div>
+                </div>
+                <div>
+                    <strong>Charlie</strong>
+                    <div class="status" id="charlieStatus">Online</div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>Test Actions:</h3>
+        <button class="button" onclick="simulateMessage('alice', 'Alice')">Alice sends message</button>
+        <button class="button" onclick="simulateMessage('bob', 'Bob')">Bob sends message</button>
+        <button class="button" onclick="simulateMessage('charlie', 'Charlie')">Charlie sends message</button>
+        <br>
+        <button class="button" onclick="clearUser('alice', 'Alice')">Clear Alice's count</button>
+        <button class="button" onclick="clearUser('bob', 'Bob')">Clear Bob's count</button>
+        <button class="button" onclick="clearUser('charlie', 'Charlie')">Clear Charlie's count</button>
+        <br>
+        <button class="button" onclick="clearAll()">Clear All Counts</button>
+        <button class="button" onclick="testNotification()">Test Browser Notification</button>
+        
+        <h3>Current State:</h3>
+        <div id="stateDisplay">
+            <p>Alice: <span id="aliceCount">0</span> unread</p>
+            <p>Bob: <span id="bobCount">0</span> unread</p>
+            <p>Charlie: <span id="charlieCount">0</span> unread</p>
+            <p>Total: <span id="totalCount">0</span> unread</p>
+        </div>
+    </div>
+
+    <script>
+        // Simulated unread counts
+        let unreadCounts = {
+            alice: 0,
+            bob: 0,
+            charlie: 0
+        };
+
+        function updateDisplay() {
+            // Update individual badges
+            Object.keys(unreadCounts).forEach(userId => {
+                const count = unreadCounts[userId];
+                const badge = document.getElementById(userId + 'Badge');
+                const status = document.getElementById(userId + 'Status');
+                const countSpan = document.getElementById(userId + 'Count');
+                
+                if (count > 0) {
+                    badge.style.display = 'flex';
+                    badge.textContent = count > 99 ? '99+' : count;
+                    status.textContent = `${count} new message${count > 1 ? 's' : ''}`;
+                    status.style.color = '#ef4444';
+                } else {
+                    badge.style.display = 'none';
+                    status.textContent = 'Online';
+                    status.style.color = '#6b7280';
+                }
+                
+                countSpan.textContent = count;
+            });
+            
+            // Update total badge
+            const total = Object.values(unreadCounts).reduce((sum, count) => sum + count, 0);
+            const totalBadge = document.getElementById('totalBadge');
+            const totalCount = document.getElementById('totalCount');
+            
+            if (total > 0) {
+                totalBadge.style.display = 'inline';
+                totalBadge.textContent = total;
+            } else {
+                totalBadge.style.display = 'none';
+            }
+            
+            totalCount.textContent = total;
+        }
+
+        function simulateMessage(userId, username) {
+            unreadCounts[userId]++;
+            updateDisplay();
+            
+            // Show notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const count = unreadCounts[userId];
+                const title = `Direct message from ${username} (${count} unread)`;
+                const body = count > 1 ? `New message (+${count - 1} more messages)` : 'New message';
+                
+                new Notification(title, {
+                    body: body,
+                    icon: '/favicon.ico',
+                    tag: `message-${userId}`,
+                });
+            }
+            
+            console.log(`${username} sent a message. Total unread: ${unreadCounts[userId]}`);
+        }
+
+        function clearUser(userId, username) {
+            unreadCounts[userId] = 0;
+            updateDisplay();
+            console.log(`Cleared unread count for ${username}`);
+        }
+
+        function clearAll() {
+            Object.keys(unreadCounts).forEach(userId => {
+                unreadCounts[userId] = 0;
+            });
+            updateDisplay();
+            console.log('Cleared all unread counts');
+        }
+
+        function testNotification() {
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    new Notification('Test Notification', {
+                        body: 'This is a test notification from Geo Chat',
+                        icon: '/favicon.ico',
+                    });
+                } else if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            testNotification();
+                        }
+                    });
+                } else {
+                    alert('Notifications are blocked. Please enable them in your browser settings.');
+                }
+            } else {
+                alert('Your browser does not support notifications.');
+            }
+        }
+
+        // Request notification permission on load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>

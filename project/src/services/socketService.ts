@@ -13,7 +13,7 @@ class SocketService {
   private socket: SocketType | null = null;
   private listeners: Map<string, Function[]> = new Map();
 
-  constructor(private serverUrl: string = 'http://localhost:3001') {}
+  constructor(private serverUrl: string = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001') {}
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
